@@ -1,0 +1,10 @@
+SELF_SCHEDULE = 0 
+ECONOMIC_BID_P_MEAN = 1
+ECONOMIC_BID_P_ARGMAX = 2 
+ECONOMIC_BID_DUAL = 3
+STRATEGY_NAMES = {
+    SELF_SCHEDULE: 'selfsch',
+    ECONOMIC_BID_P_MEAN: 'econbid_p_mean',
+    ECONOMIC_BID_P_ARGMAX: 'econbid_p_argmax',
+    ECONOMIC_BID_DUAL: 'econbid_p_dual',
+}
