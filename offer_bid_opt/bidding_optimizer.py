@@ -50,7 +50,8 @@ class BiddingOptimizer():
         if self.strategy == None: 
             self.bidding_model = BiddingModel(new_strat, self.data, self.wind_capacity_mw)
         elif self.strategy != new_strat: # change in strategy 
-            self.bidding_model.update_model(new_strat)
+            # self.bidding_model.update_model(new_strat)
+            self.bidding_model = BiddingModel(new_strat, self.data, self.wind_capacity_mw)
         elif self.strategy == new_strat: # do nothing 
             return 
 
@@ -81,6 +82,8 @@ class BiddingOptimizer():
 
         # solve 
         solver = SolverFactory(solver_option)
+        solver = SolverFactory('glpk')
+        solver = SolverFactory('scip') # executable="/Users/hchen/miniforge3/envs/Tensorflow/bin/scip")
         solver.solve(self.bidding_model.model, tee=True) 
 
         bidding_plan, revenues = post_solve(self.bidding_model.model, strategy)
