@@ -2,7 +2,7 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from offer_bid_opt.bidding_model import BiddingModel
 from offer_bid_opt.utility import *
-from offer_bid_opt.postprocess import post_solve
+from offer_bid_opt.postprocess import post_solve, get_revenue_spread
 from offer_bid_opt.sample_data_generator import generate_sample_data
 from offer_bid_opt.visualize import plot_hourly_offer_bid
 from offer_bid_opt.constants import STRATEGY_NAMES
