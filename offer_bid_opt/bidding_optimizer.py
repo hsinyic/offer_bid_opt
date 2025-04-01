@@ -69,7 +69,7 @@ class BiddingOptimizer():
         return revenue
             
 
-    def optimize(self, cvar=None, visualize_option=False, solver_option=['cbc', None, False]):
+    def optimize(self, cvar=None, visualize_option=False, solver_option=['glpk', None, False]):
         strategy, stra_name = self.strategy, STRATEGY_NAMES[self.strategy]
 
         if cvar is None or cvar['beta'] == 0.0:
@@ -81,7 +81,7 @@ class BiddingOptimizer():
 
         # TODO: hacky 
         # solver = SolverFactory('glpk')
-        # solver = SolverFactory('scip', executable="/Users/hchen/miniforge3/envs/Tensorflow/bin/scip")
+        # solver = SolverFactory('scip', executable='/Users/hchen/miniforge3/envs/Tensorflow/bin/scip')
         solver_name, path_to_executable, tee = solver_option
         if path_to_executable is None: 
             solver = SolverFactory(solver_name)
