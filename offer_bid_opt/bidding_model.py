@@ -249,18 +249,18 @@ class BiddingModel():
         m.price = pyo.Param(m.times, within= pyo.Reals, initialize=0, mutable=True)
         m.price_indicator = pyo.Param( (m.times * m.scenarios), mutable=True)
 
-        # bigM to model disjunction on whether offer/bid clears 
-        # def offer_clear_rule_quantity(m, t):
-        #     return m.quantity_offer[t] <= m.bigM * m.binary_offer_clear[t]
-        # def bid_clear_rule_quantity(m, t):
-        #     return m.quantity_bid[t] <= m.bigM * (1 - m.binary_offer_clear[t])
-        # m.binary_offer_clear = pyo.Var((m.times), within = pyo.Binary)
-        # m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times), rule = offer_clear_rule_quantity)
-        # m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times), rule = bid_clear_rule_quantity)
+        # bigM to model disjunction on whether to put in an offer or a bid  
+        def offer_clear_rule_quantity(m, t):
+            return m.quantity_offer[t] <= m.bigM * m.binary_offer_clear[t]
+        def bid_clear_rule_quantity(m, t):
+            return m.quantity_bid[t] <= m.bigM * (1 - m.binary_offer_clear[t])
+        m.binary_offer_clear = pyo.Var((m.times), within = pyo.Binary)
+        m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times), rule = offer_clear_rule_quantity)
+        m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times), rule = bid_clear_rule_quantity)
 
 
-        # m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-        #                                              m.quantity_bid[t]  <= m.windgen[t,s])
+        m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
+                                                     m.quantity_bid[t]  <= m.windgen[t,s])
 
 
 
