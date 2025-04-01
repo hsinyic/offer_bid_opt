@@ -68,8 +68,8 @@ class BiddingModel():
 
         m.CONSTR_wind_farm_forecast_offer_ub = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
                                                      m.quantity_offer[t]  <= m.windforecast[t] )
-        m.CONSTR_wind_farm_forecast_offer_lb = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-                                                     m.quantity_offer[t]  >= -m.windforecast[t])
+        # m.CONSTR_wind_farm_forecast_offer_lb = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
+        #                                              m.quantity_offer[t]  >= -m.windforecast[t])
 
 
         # Expressions for unit revenue and scenario revenue 
@@ -116,8 +116,8 @@ class BiddingModel():
 
         # Var 
         # delete offer and bid cleared component quantity at each time and scenarios  
-        m.quantity_bid_scenario = pyo.Var( (m.times * m.scenarios), within= pyo.Reals, bounds = (0, m.wind_capacity_mw)) # introduce separate variable for realized quantity offer
-        m.quantity_offer_scenario = pyo.Var( (m.times * m.scenarios), within= pyo.Reals, bounds = (0, m.wind_capacity_mw)) # introduce separate variable for realized quantity bid
+        m.quantity_bid_scenario = pyo.Var( (m.times * m.scenarios), within= pyo.Reals, bounds = (0, m.wind_capacity_mw), initialize=0) # introduce separate variable for realized quantity offer
+        m.quantity_offer_scenario = pyo.Var( (m.times * m.scenarios), within= pyo.Reals, bounds = (0, m.wind_capacity_mw), initialize=0) # introduce separate variable for realized quantity bid
 
         # m.quantity_offer = pyo.Var( (m.times), within= pyo.Reals, bounds = (0, m.wind_capacity_mw)) 
         m.quantity_offer.setlb(0) 
@@ -208,13 +208,11 @@ class BiddingModel():
 
 
         m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_offer_scenario[t,s] <=  m.windforecast[t] )
-        m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windforecast[t])
+        # m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windforecast[t])
 
-        # p_opt, _ = find_p_argmax(self.data, True)  # 
+        # p_opt, _ = find_p_argmax(self.data, False)  # 
         # m.price_offer.store_values(p_opt)
-        # for t in m.times:
-        #     m.price_offer[t].value = p_opt[t]
-    
+
         # Expressions for unit revenue and scenario revenue 
         def unit_revenue_econ(m, t, s):
             return (
@@ -267,8 +265,8 @@ class BiddingModel():
         m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times), rule = bid_clear_rule_quantity)
 
 
-        m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-                                                     m.quantity_bid[t]  <= m.windforecast[t])
+        # m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
+        #                                              m.quantity_bid[t]  <= m.windforecast[t])
 
 
 
