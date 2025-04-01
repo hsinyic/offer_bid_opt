@@ -82,8 +82,8 @@ class BiddingOptimizer():
 
         # solve 
         solver = SolverFactory(solver_option)
-        solver = SolverFactory('glpk')
-        solver = SolverFactory('scip') # executable="/Users/hchen/miniforge3/envs/Tensorflow/bin/scip")
+        # solver = SolverFactory('glpk')
+        # solver = SolverFactory('scip', executable="/Users/hchen/miniforge3/envs/Tensorflow/bin/scip")
         solver.solve(self.bidding_model.model, tee=True) 
 
         bidding_plan, revenues = post_solve(self.bidding_model.model, strategy)
