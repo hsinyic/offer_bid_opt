@@ -69,7 +69,7 @@ class BiddingOptimizer():
         return revenue
             
 
-    def optimize(self, cvar=None, visualize_option=False, solver_option='glpk'):
+    def optimize(self, cvar=None, visualize_option=False, solver_option='ipopt'):
         strategy, stra_name = self.strategy, STRATEGY_NAMES[self.strategy]
 
         if cvar is None or cvar['beta'] == 0.0:
