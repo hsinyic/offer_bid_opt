@@ -27,33 +27,32 @@ data, _ = generate_sample_data(500, 24, 150)
 bidding_instance.set_data(data) # dalmp, rtlmp,windgen 
 bidding_instance.set_wind_capacity_mw(150) 
 '''
-'''
-print("----- self schedule -------")
+
+# print("----- self schedule -------")
 bidding_instance.set_strategy(new_strat=SELF_SCHEDULE)
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.8, 'beta':0}) 
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.95, 'beta':0.5}) 
-bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.95, 'beta':0.8}) 
-
-
-
-
-print("----- economic bidding strategies mean -------")
-bidding_instance.set_strategy(new_strat=ECONOMIC_BID_P_MEAN)
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.8, 'beta':0}) 
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.95, 'beta':0.5}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.8, 'beta':0}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.5}) 
 bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.8}) 
 
-print("----- economic bidding strategies argmax -------")
+
+
+# print("----- economic bidding strategies mean -------")
+bidding_instance.set_strategy(new_strat=ECONOMIC_BID_P_MEAN)
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.8, 'beta':0}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.5}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.8}) 
+
+# print("----- economic bidding strategies argmax -------")
 bidding_instance.set_strategy(new_strat=ECONOMIC_BID_P_ARGMAX)
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.8, 'beta':0}) 
-# bidding_instance.optimize(visualize_option=False, cvar={'alpha':0.95, 'beta':0.5}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.8, 'beta':0}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.5}) 
 bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.8})  
+'''
 
-
-print("----- economic bidding dual offer and bid -------")
+print("----- economic bidding dual offer and bid: submit both offer and bid each with different price -------")
 bidding_instance.set_strategy(new_strat=ECONOMIC_BID_DUAL)
-# bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.8, 'beta':0}) 
-# bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.5}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.8, 'beta':0}) 
+bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.5}) 
 bidding_instance.optimize(visualize_option=True, cvar={'alpha':0.95, 'beta':0.8})  
 revenues_spread = bidding_instance.get_revenue_dict() 
 plot_histogram(revenues_spread)
