@@ -135,13 +135,13 @@ class BiddingModel():
         # ======
 
         def offer_clear_rule_price_scenarios(m, t, s):
-            return m.price_offer[t] >=  m.dalmp[t,s] - m.bigM * (1 - m.sigma_offer[t,s]) 
-            # price_offer >= dalmp. when sigma_offer is 1, this constraint holds 
+            return m.price_offer[t] <=  m.dalmp[t,s] - m.bigM * (1 - m.sigma_offer[t,s]) 
+            # price_offer <= dalmp. when sigma_offer is 1, this constraint holds 
         
 
         def bid_clear_rule_price_scenarios(m, t, s):
-            return m.price_bid[t] <=  m.dalmp[t,s] + m.bigM * (1 - m.sigma_bid[t,s]) 
-            # price_bid <= dalmp. when sigma_bid is 1, this constraint holds 
+            return m.price_bid[t] >=  m.dalmp[t,s] + m.bigM * (1 - m.sigma_bid[t,s]) 
+            # price_bid >= dalmp. when sigma_bid is 1, this constraint holds 
 
         m.CONSTR_offer_clear_price_per_scenarios = pyo.Constraint( (m.times * m.scenarios), rule = offer_clear_rule_price_scenarios)
         m.CONSTR_bid_clear_price_per_scenarios = pyo.Constraint( (m.times * m.scenarios), rule = bid_clear_rule_price_scenarios)
@@ -158,7 +158,7 @@ class BiddingModel():
         # Offer quantity oncstraints 
         # ======
         # when sigma offer is 1, then m.quantity_offer[t] >= m.quantity_offer_scenario[t,s] >= m.quantity_offer[t]
-        # when sigma offer is 0,      M >= m.quantity_offer_scenario[t,s] >= - < 
+        # when sigma offer is 0,      M >= m.quantity_offer_scenario[t,s] >= - M
         # m.quantity_offer[t] + m.bigM * ( 1- m.sigma_offer[t,s])  >= m.quantity_offer_scenario[t,s] >= m.quantity_offer[t] - m.bigM * ( 1- m.sigma_offer[t,s])        
         
         # when sigma offer is 0, then     0    >= m.quantity_offer_scenario >= 0 
@@ -207,7 +207,6 @@ class BiddingModel():
         m.CONSTR_bid_clear_rule_4 = pyo.Constraint( (m.times * m.scenarios), rule = bid_clear_rule_4)
 
 
-        # What if weather limnits amount of bidding constraints but might be useful in speed 
         m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_offer_scenario[t,s] <=  m.windforecast[t] )
         m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windforecast[t])
 
