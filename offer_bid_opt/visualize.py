@@ -249,8 +249,8 @@ def plot_hourly_net_offer_bid_only(m, strategies, title=""):
     # Plot each strategy's net offer/bid
     for strategy_name, strategy_data in strategies.items():
         # Extract offer and bid from the strategy data
-        offer = strategy_data[:, 1]  # Offer is the first column
-        bid = strategy_data[:, 2]    # Bid is the second column
+        offer = strategy_data[:, 2]  # Offer is the first column
+        bid = strategy_data[:, 3]    # Bid is the second column
 
         # Calculate net offer/bid
         net_offer_bid = offer - bid
@@ -316,11 +316,18 @@ def plot_hourly_net_price_only(m, strategies, title=""):
     for strategy_name, strategy_data in strategies.items():
         # Extract offer and bid from the strategy data
         price = strategy_data[:, 0]  # Price is the first column
+        price = strategy_data[:, 1]  # Price is the first column
 
         # Plot net offer/bid
         fig.add_trace(go.Scatter(
             x=times, y=price, mode='lines+markers',
-            name=f'{strategy_name} demand/bid price $/MWh ',
+            name=f'{strategy_name} offer price $/MWh ',
+            line=dict(dash='solid')
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=times, y=price, mode='lines+markers',
+            name=f'{strategy_name} bid price $/MWh ',
             line=dict(dash='solid')
         ))
 
