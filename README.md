@@ -127,8 +127,7 @@ offer_bid_opt/
 
 ### `script`
 - **run_strategies.py**: Runs bidding strategy simulations.
-- **run_strategies_limit_quantity.py**: Executes strategy with quantity constraints.
-- **run_optimal_prices.py**: Computes optimal prices based on market data.
+- **run_optimal_prices.py**: Computes optimal prices based on dalmp,rtlmp,windgen data.
 
 ### `test`
 - Contains unit tests.
