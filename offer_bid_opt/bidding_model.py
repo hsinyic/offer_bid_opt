@@ -50,23 +50,26 @@ class BiddingModel():
             return data[s][t][0]
         def param_windgen(m, t, s):
             return data[s][t][2]
-        
+        def windforecast(m, t):
+            return data[:,t,2].mean()
+
         # Param 
         m.rtlmp = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_rtlmp)
         m.dalmp = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_dalmp)
         m.windgen = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_windgen)
+        m.windforecast = pyo.Param( (m.times), within= pyo.Reals, mutable=True, initialize=windforecast)
         m.wind_capacity_mw = pyo.Param(within= pyo.Reals, initialize=wind_capacity_mw, mutable=True)
-        m.bigM = pyo.Expression(rule= lambda m:m.wind_capacity_mw * 100)  # TODO: make Pyomo assign best bigM values 
+        m.bigM = pyo.Expression(rule= lambda m:m.wind_capacity_mw * 10)  # TODO: make Pyomo assign best bigM values 
 
         # Variables 
         m.quantity_offer = pyo.Var(m.times, within= pyo.Reals, initialize = 0)
         m.quantity_offer.setlb(-m.wind_capacity_mw) # TODO: when wind_capacity_mw changes, test whether m.quantity_offer upper and lower bound would also update 
         m.quantity_offer.setub(m.wind_capacity_mw)
 
-        # m.CONSTR_wind_farm_forecast_offer_ub = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-        #                                              m.quantity_offer[t]  <= m.windgen[t,s])
-        # m.CONSTR_wind_farm_forecast_offer_lb = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-        #                                              m.quantity_offer[t]  >= -m.windgen[t,s])
+        m.CONSTR_wind_farm_forecast_offer_ub = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
+                                                     m.quantity_offer[t]  <= m.windforecast[t] )
+        m.CONSTR_wind_farm_forecast_offer_lb = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
+                                                     m.quantity_offer[t]  >= -m.windforecast[t])
 
 
         # Expressions for unit revenue and scenario revenue 
@@ -120,10 +123,12 @@ class BiddingModel():
         m.quantity_offer.setlb(0) 
         m.quantity_bid = pyo.Var( (m.times), within= pyo.Reals, bounds = (0, m.wind_capacity_mw), initialize =0) # introduce separate variable for bid
 
+        # m.price_offer = pyo.Param(m.times, within= pyo.Reals, initialize=0, mutable=True)
         m.price_offer = pyo.Var(m.times, within= pyo.Reals, initialize=0)
         m.sigma_offer = pyo.Var( (m.times * m.scenarios), within = pyo.Binary)
         m.price_bid = pyo.Var(m.times, within= pyo.Reals, initialize=0)
         m.sigma_bid = pyo.Var( (m.times * m.scenarios), within = pyo.Binary)
+
 
         # ======
         # Offer and Bid price oncstraints 
@@ -203,9 +208,13 @@ class BiddingModel():
 
 
         # What if weather limnits amount of bidding constraints but might be useful in speed 
-        # m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_offer_scenario[t,s] <=  m.windgen[t,s] )
-        # m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windgen[t,s])
+        m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_offer_scenario[t,s] <=  m.windforecast[t] )
+        m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windforecast[t])
 
+        # p_opt, _ = find_p_argmax(self.data, True)  # 
+        # m.price_offer.store_values(p_opt)
+        # for t in m.times:
+        #     m.price_offer[t].value = p_opt[t]
     
         # Expressions for unit revenue and scenario revenue 
         def unit_revenue_econ(m, t, s):
@@ -260,7 +269,7 @@ class BiddingModel():
 
 
         m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-                                                     m.quantity_bid[t]  <= m.windgen[t,s])
+                                                     m.quantity_bid[t]  <= m.windforecast[t])
 
 
 
