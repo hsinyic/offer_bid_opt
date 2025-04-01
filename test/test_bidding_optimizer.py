@@ -113,7 +113,7 @@ def test_econ_bid_multiple_scenarios():
 
     price = np.mean(test_data[:, :, 1], axis=0)  # mean RTLMP of each hour
     offer = np.array([95, 0])
-    bid = np.array([0, 82.5])
+    bid = np.array([0, 120])
     price_offer = np.where(offer > 0, price, 0 )  # mean RTLMP of each hour
     price_bid = np.where(bid > 0, price, 0 )  # mean RTLMP of each hour
     expected_bidding_plan = np.column_stack((price_offer, price_bid, offer, bid))
@@ -131,7 +131,7 @@ def test_econ_bid_multiple_scenarios():
     )  # p is the argmax of an expected [(DA-RT price) * (DA >= p*)]
     price = list(p_dict.values())
     offer = np.array([95, 0])
-    bid = np.array([0, 82.5])
+    bid = np.array([0, 120])
     price_offer = np.where(offer > 0, price, 0 )  # mean RTLMP of each hour
     price_bid = np.where(bid > 0, price, 0 )  # mean RTLMP of each hour
     expected_bidding_plan = np.column_stack((price_offer, price_bid, offer, bid))

@@ -5,9 +5,21 @@ from offer_bid_opt.price import *
 from offer_bid_opt.constants import * 
 from typing import Tuple, Dict, List, Optional, Union, Any
 
-class BiddingModel():
+class BiddingModel:
+    """
+    A class to model a offering/bidding strategy for a wind farm, implementing different strategies
+    including self-schedule (quantity only) and economic bid (price and quantity) models.
+    """
 
-    def __init__(self, strategy:str, data:np.array, wind_capacity_mw:float):
+    def __init__(self, strategy: str, data: np.array, wind_capacity_mw: float):
+        """
+        Initializes the bidding model with the provided strategy, data, and wind capacity.
+
+        Args:
+            strategy (str): The bidding strategy (e.g., 'SELF_SCHEDULE', 'ECONOMIC_BID_DUAL', etc.)
+            data (np.array): The historical or forecasted data for dalmp, rtlmp, and wind generation.
+            wind_capacity_mw (float): The total wind generation capacity in megawatts.
+        """
         self.strategy = strategy 
         self.data = data
         self.wind_capacity_mw = wind_capacity_mw
@@ -15,12 +27,31 @@ class BiddingModel():
         self.build_model()
 
     def get_model(self) -> pyo.ConcreteModel:
+        """
+        Returns the Pyomo model instance.
+
+        Returns:
+            pyo.ConcreteModel: The Pyomo optimization model.
+        """
         return self.model 
     
     def set_strategy(self, stra: str):
+        """
+        Sets the strategy for the bidding model.
+
+        Args:
+            stra (str): The new strategy to set.
+        """
         self.strategy = stra 
 
-    def build_model(self): # build model from scratch 
+    def build_model(self):
+        """
+        Builds the Pyomo model based on the selected strategy. The model can either be
+        self-schedule, economic bid with different pricing determination...etc
+
+        This method calls other methods to build different types of models based on the
+        strategy set during initialization.
+        """
         if self.strategy == SELF_SCHEDULE:
             self.model = self.build_self_schedule_model()
         elif self.strategy == ECONOMIC_BID_DUAL:
@@ -31,19 +62,30 @@ class BiddingModel():
             self.update_price()
 
     def expand_model(self):
+        """
+        Expands the existing self schedule model by adding economic bid constraints and objectives.
+        This is used to modify a self-schedule model into an economic bid model.
+        """
         self.model = self.build_econ_bid_model(self.model)
         self.update_price()
 
     def build_self_schedule_model(self) -> pyo.ConcreteModel:
+        """
+        Builds a self-schedule model  
+        This model optimize the quantity offer/bid for maximum revenue.
+
+        Returns:
+            pyo.ConcreteModel: A Pyomo model for self-scheduling.
+        """
         data, wind_capacity_mw = self.data, self.wind_capacity_mw
         num_samples, num_hours, _ = data.shape
         m = pyo.ConcreteModel()
 
         # Sets 
-        m.times = pyo.Set(initialize = [i for i in range(num_hours)], ordered=True)
-        m.scenarios = pyo.Set(initialize = [i for i in range(num_samples)], ordered=False)
+        m.times = pyo.Set(initialize=[i for i in range(num_hours)], ordered=True)
+        m.scenarios = pyo.Set(initialize=[i for i in range(num_samples)], ordered=False)
 
-        # TODO: research methods to load param values faster 
+        # Parameters
         def param_rtlmp(m, t, s):
             return data[s][t][1]
         def param_dalmp(m, t, s):
@@ -51,66 +93,62 @@ class BiddingModel():
         def param_windgen(m, t, s):
             return data[s][t][2]
         def windforecast(m, t):
-            return data[:,t,2].mean()
+            return data[:, t, 2].mean()
 
-        # Param 
-        m.rtlmp = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_rtlmp)
-        m.dalmp = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_dalmp)
-        m.windgen = pyo.Param( (m.times * m.scenarios), within= pyo.Reals, mutable=True, initialize=param_windgen)
-        m.windforecast = pyo.Param( (m.times), within= pyo.Reals, mutable=True, initialize=windforecast)
-        m.wind_capacity_mw = pyo.Param(within= pyo.Reals, initialize=wind_capacity_mw, mutable=True)
-        m.bigM = pyo.Expression(rule= lambda m:m.wind_capacity_mw * 10)  # TODO: make Pyomo assign best bigM values 
+        m.rtlmp = pyo.Param((m.times * m.scenarios), within=pyo.Reals, mutable=True, initialize=param_rtlmp)
+        m.dalmp = pyo.Param((m.times * m.scenarios), within=pyo.Reals, mutable=True, initialize=param_dalmp)
+        m.windgen = pyo.Param((m.times * m.scenarios), within=pyo.Reals, mutable=True, initialize=param_windgen)
+        m.windforecast = pyo.Param((m.times), within=pyo.Reals, mutable=True, initialize=windforecast)
+        m.wind_capacity_mw = pyo.Param(within=pyo.Reals, initialize=wind_capacity_mw, mutable=True)
+        m.bigM = pyo.Expression(rule=lambda m: m.wind_capacity_mw * 10)
 
         # Variables 
-        m.quantity_offer = pyo.Var(m.times, within= pyo.Reals, initialize = 0)
-        m.quantity_offer.setlb(-m.wind_capacity_mw) # TODO: when wind_capacity_mw changes, test whether m.quantity_offer upper and lower bound would also update 
+        m.quantity_offer = pyo.Var(m.times, within=pyo.Reals, initialize=0)
+        m.quantity_offer.setlb(-m.wind_capacity_mw)
         m.quantity_offer.setub(m.wind_capacity_mw)
 
-        m.CONSTR_wind_farm_forecast_offer_ub = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-                                                     m.quantity_offer[t]  <= m.windforecast[t] )
-        # m.CONSTR_wind_farm_forecast_offer_lb = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-        #                                              m.quantity_offer[t]  >= -m.windforecast[t])
-
+        m.CONSTR_wind_farm_forecast_offer_ub = pyo.Constraint((m.times * m.scenarios), rule=lambda m, t, s: m.quantity_offer[t] <= m.windforecast[t])
 
         # Expressions for unit revenue and scenario revenue 
         def per_scenario_per_time_revenue(m, t, s):
             return (
-                        (m.dalmp[t,s] - m.rtlmp[t,s]) * (m.quantity_offer[t]) +
-                        m.windgen[t,s] * m.rtlmp[t,s]
+                (m.dalmp[t, s] - m.rtlmp[t, s]) * (m.quantity_offer[t]) +
+                m.windgen[t, s] * m.rtlmp[t, s]
             )
 
-        m.unit_revenue = pyo.Expression((m.times * m.scenarios), rule = per_scenario_per_time_revenue)
-        m.revenue = pyo.Expression((m.scenarios), rule =
-                                            lambda m, s: sum(m.unit_revenue[t,s] for t in m.times)
-        )
+        m.unit_revenue = pyo.Expression((m.times * m.scenarios), rule=per_scenario_per_time_revenue)
+        m.revenue = pyo.Expression((m.scenarios), rule=lambda m, s: sum(m.unit_revenue[t, s] for t in m.times))
 
         # CVar 
-        #        param
-        m.beta = pyo.Param( within= pyo.Reals, initialize=0.5, mutable=True)
-        m.alpha = pyo.Param( within= pyo.Reals, initialize=0.95, mutable=True)
-        #        variables 
+        m.beta = pyo.Param(within=pyo.Reals, initialize=0.5, mutable=True)
+        m.alpha = pyo.Param(within=pyo.Reals, initialize=0.95, mutable=True)
         m.eta = pyo.Var(m.scenarios, domain=pyo.NonNegativeReals)
         m.zeta = pyo.Var(domain=pyo.Reals)
-        #        expressions
-        m.cvar = pyo.Expression(rule= lambda m:  m.zeta - 1/(1-m.alpha) * sum( 1/len(m.scenarios) * m.eta[s] for s in m.scenarios
-                ))
-        #        constraints 
-        m.CONSTR_cvar = pyo.Constraint(m.scenarios, rule=lambda m, s:
-                                    -sum(m.unit_revenue[t,s] for t in m.times) + m.zeta - m.eta[s] <= 0
-                                    )
+        m.cvar = pyo.Expression(rule=lambda m: m.zeta - 1 / (1 - m.alpha) * sum(1 / len(m.scenarios) * m.eta[s] for s in m.scenarios))
+
+        m.CONSTR_cvar = pyo.Constraint(m.scenarios, rule=lambda m, s: -sum(m.unit_revenue[t, s] for t in m.times) + m.zeta - m.eta[s] <= 0)
 
         # Objective 
-        m.OBJ_cvar = pyo.Objective(rule= lambda m:  (
-            (1-m.beta) * sum( 1/len(m.scenarios) *  m.revenue[s] for s in m.scenarios) +
-                m.beta * (m.zeta - 1/(1-m.alpha) * sum( 1/len(m.scenarios) * m.eta[s] for s in m.scenarios ))
-                ),
-            sense = pyo.maximize)
+        m.OBJ_cvar = pyo.Objective(
+            rule=lambda m: (
+                (1 - m.beta) * sum(1 / len(m.scenarios) * m.revenue[s] for s in m.scenarios) +
+                m.beta * (m.zeta - 1 / (1 - m.alpha) * sum(1 / len(m.scenarios) * m.eta[s] for s in m.scenarios))
+            ),
+            sense=pyo.maximize
+        )
 
         return m 
 
     def build_dual_econ_bid_model(self) -> pyo.ConcreteModel:
-        # disable self-schedule cvar constraints and objectives 
+        """
+        Builds a dual economic bidding model based on the self-schedule model plus
+        additional new variables and constraints for bids and offers.
+
+        Returns:
+            pyo.ConcreteModel: A Pyomo model for the dual economic bid strategy.
+        """
         m = self.build_self_schedule_model()
+        # disable self-schedule cvar constraints and objectives 
         m.CONSTR_cvar.deactivate()
         m.OBJ_cvar.deactivate()
 
@@ -147,11 +185,6 @@ class BiddingModel():
         m.CONSTR_bid_clear_price_per_scenarios = pyo.Constraint( (m.times * m.scenarios), rule = bid_clear_rule_price_scenarios)
 
 
-        # half of the offers cleared 
-        # m.CONSTR_bullshit = pyo.Constraint(rule = lambda m: sum(m.sigma_offer[t,s] + m.sigma_bid[t,s] for t in m.times for s in m.scenarios) >= 
-        #                                    sum(2 for t in m.times for s in m.scenarios) * 0.1 )
-
-        # m.CONSTR_sigma = pyo.Constraint((m.times * m.scenarios), rule = lambda m, t, s: m.sigma_offer[t,s] + m.sigma_bid[t,s] == 1 )
         m.CONSTR_sigma = pyo.Constraint((m.times * m.scenarios), rule = lambda m, t, s: m.sigma_offer[t,s] + m.sigma_bid[t,s] <= 1 ) # can only award either bid or offer. 
 
         # ======
@@ -210,9 +243,6 @@ class BiddingModel():
         m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_offer_scenario[t,s] <=  m.windforecast[t] )
         # m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times * m.scenarios), rule = lambda m, t, s: m.quantity_bid_scenario[t,s] <=  m.windforecast[t])
 
-        # p_opt, _ = find_p_argmax(self.data, False)  # 
-        # m.price_offer.store_values(p_opt)
-
         # Expressions for unit revenue and scenario revenue 
         def unit_revenue_econ(m, t, s):
             return (
@@ -263,13 +293,6 @@ class BiddingModel():
         m.binary_offer_clear = pyo.Var((m.times), within = pyo.Binary)
         m.CONSTR_offer_clear_quantity = pyo.Constraint( (m.times), rule = offer_clear_rule_quantity)
         m.CONSTR_bid_clear_quantity = pyo.Constraint( (m.times), rule = bid_clear_rule_quantity)
-
-
-        # m.CONSTR_wind_farm_forecast_bid = pyo.Constraint( (m.times * m.scenarios), rule=lambda m,t,s:
-        #                                              m.quantity_bid[t]  <= m.windforecast[t])
-
-
-
 
 
         # Expressions for unit revenue and scenario revenue 
