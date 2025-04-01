@@ -69,7 +69,7 @@ class BiddingOptimizer():
         return revenue
             
 
-    def optimize(self, cvar=None, visualize_option=False, solver_option='ipopt'):
+    def optimize(self, cvar=None, visualize_option=False, solver_option=['cbc', None, False]):
         strategy, stra_name = self.strategy, STRATEGY_NAMES[self.strategy]
 
         if cvar is None or cvar['beta'] == 0.0:
@@ -79,12 +79,15 @@ class BiddingOptimizer():
             run_name = f'{stra_name}_alpha{cvar["alpha"]*100:.0f}_beta{cvar["beta"]*100:.0f}'
         self.bidding_model.load_cvar_alpha_beta(cvar)
 
-
-        # solve 
-        solver = SolverFactory(solver_option)
+        # TODO: hacky 
         # solver = SolverFactory('glpk')
         # solver = SolverFactory('scip', executable="/Users/hchen/miniforge3/envs/Tensorflow/bin/scip")
-        solver.solve(self.bidding_model.model, tee=True) 
+        solver_name, path_to_executable, tee = solver_option
+        if path_to_executable is None: 
+            solver = SolverFactory(solver_name)
+        else:
+            solver = SolverFactory(solver_name, executable=path_to_executable)
+        solver.solve(self.bidding_model.model, tee=tee) 
 
         bidding_plan, revenues = post_solve(self.bidding_model.model, strategy)
         self.bidding_plan_dict[run_name] = bidding_plan

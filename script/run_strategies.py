@@ -9,7 +9,7 @@ import os
 
 
 # Get the absolute path to the data directory
-base_dir = os.path.dirname(os.path.abspath(__file__))  # This will get the directory of your script
+base_dir = os.path.dirname(os.path.abspath("__main__"))  # This will get the directory of your script
 data_dir = os.path.join(base_dir, '..', 'data')  # Going one level up and then to the 'data' folder
 
 
